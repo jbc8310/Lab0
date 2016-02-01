@@ -11,6 +11,7 @@
 #include "led.h"
 #include "interrupt.h"
 #include "config.h"
+#include "switch.h"
 
 #define ON 1
 #define OFF 0
@@ -35,6 +36,7 @@ int main() {
     //TODO: Write each initialization function
     initLEDs();
     initTimer1();
+    initSwitch();
     
     while(1){
 
