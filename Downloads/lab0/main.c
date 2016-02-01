@@ -83,3 +83,10 @@ void __ISR(_TIMER_1_VECTOR, IPL7SRS) _T1interrupt(){
     
     
 }
+
+void __ISR(_CHANGE_NOTICE_VECTOR, IPL7SRS) _CNINterrupt(){
+    IFS1bits.CNDIF = OFF;   //puts the interrupt flag down
+    PORTDbits.RD6 = INPUT;      //turns switch into an input
+    LED1 = ON;
+    
+}
