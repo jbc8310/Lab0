@@ -13,21 +13,27 @@
 #include "config.h"
 #include "switch.h"
 
-#define ON 1
+#define ENABLE 1
 #define OFF 0
 #define OUTPUT 0
 #define INPUT 1
 #define LED1 LATDbits.LATD0
 #define LED2 LATDbits.LATD1
 #define LED3 LATDbits.LATD2
+#define PRESSED 0
+#define RELEASED 1
+#define BUTTON PORTDbits.RD6
 
 //TODO: Define states of the state machine
 typedef enum stateTypeEnum{        //creating a variable for leds
-    led1, led2, led3
+    led1, led2, led3, Press, Release
 } stateType;
 
 //TODO: Use volatile variables that change within interrupts
-volatile int state = led1;
+volatile stateType state = led1;
+volatile stateType prevState = led1;;
+
+int flag1Second = 0;
 
 int main() {
     SYSTEMConfigPerformance(10000000);    //Configures low-level system parameters for 10 MHz clock
@@ -41,33 +47,73 @@ int main() {
     while(1){
 
         //TODO: Implement a state machine to create the desired functionality
-        switch (state){
-            case led1: 
-                LED1 = ON;
-                LED2 = OFF;
-                LED3 = OFF;
-                break;
+        
+                    
+                    switch(state){          //then lights up the led depending on current state
+                        case led1:
+                            LED1 = ENABLE;
+                            LED2 = OFF;
+                            LED3 = OFF;
+                            prevState = led1;
+                            break;
+                            
+                        case led2:
+                            LED1 = OFF;
+                            LED2 = ENABLE;
+                            LED3 = OFF;
+                            prevState = led2;
+                            break;
+                        
+                        case led3:
+                            LED1 = OFF;
+                            LED2 = OFF;
+                            LED3 = ENABLE;
+                            prevState = led3;
+                            break;
+                            
+                        case Press:
+                            T1CONbits.ON = 1;       //turn on timer
+                            break;
+                        
+                        case Release:
+                            if(prevState == led1 && flag1Second == 0){
+                                state = led2;
+                            }
+                            else if(prevState == led1 && flag1Second == 1){
+                                state = led3;
+                            }
+                            else if(prevState == led2 && flag1Second == 0){
+                                state = led3;
+                            }
+                            else if(prevState == led2 && flag1Second == 1){
+                                state = led1;
+                            } 
+                            else if(prevState == led3 && flag1Second == 0){
+                                state = led1;
+                            }
+                            else if(prevState == led3 && flag1Second == 1){
+                                state = led2;
+                            }
+                            flag1Second = 0;
+                            break;
+                            
+                        /*default:
+                            LED1 = ENABLE;
+                            LED2 = ENABLE;
+                            LED3 = ENABLE;
+                            prevState = led1;
+                            state = led1;
+                            flag1Second = 0;
+                            break;*/
+                            
+                            
+                            
+                    } //switch state
+                    
+                }    
                 
-            case led2:
-                LED1 = OFF;
-                LED2 = ON;
-                LED3 = OFF;
-                break;
-                
-            case led3:
-                LED1 = OFF;
-                LED2 = OFF;
-                LED3 = ON;
-                break;
-                
-            default:
-                LED1 = ON;
-                LED2 = ON;
-                LED3 = ON;
-                break;
-
-        }
-    }
+               
+           //while
     
     return 0;
 }
@@ -77,16 +123,20 @@ int main() {
 
 void __ISR(_TIMER_1_VECTOR, IPL7SRS) _T1interrupt(){
     IFS0bits.T1IF = 0;      //pulls down interrupt flag
-    if(state == led1) state = led2;
-    else if(state == led2) state = led3;
-    else if(state == led3) state = led1;
     
+    flag1Second = 1;
     
 }
 
 void __ISR(_CHANGE_NOTICE_VECTOR, IPL7SRS) _CNINterrupt(){
     IFS1bits.CNDIF = OFF;   //puts the interrupt flag down
-    PORTDbits.RD6 = INPUT;      //turns switch into an input
-    LED1 = ON;
+    PORTD;
+    //BUTTON = INPUT;      //turns switch into an input
+    if(BUTTON == PRESSED){
+        state = Press;
+    }
+    else if(BUTTON == RELEASED){
+        state = Release;
+    }
     
 }
