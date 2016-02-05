@@ -76,6 +76,7 @@ int main() {
                             break;
                         
                         case Release:
+                            T1CONbits.ON = 0;
                             if(prevState == led1 && flag1Second == 0){
                                 state = led2;
                             }
